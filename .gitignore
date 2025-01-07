@@ -13,4 +13,5 @@ wheels/
 
 # Sensitive files
 *.xlsx
-data/*
+*.olm
+*/Outlook for Mac Archive/
