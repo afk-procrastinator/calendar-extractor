@@ -13,4 +13,4 @@ wheels/
 
 # Sensitive files
 *.xlsx
-data/
+data/*
