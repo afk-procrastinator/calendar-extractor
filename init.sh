@@ -3,6 +3,12 @@
 # Exit on error
 set -e
 
+# Check if python is installed
+if ! command -v python &> /dev/null; then
+    echo "python is not installed. Please install it first using the instructions at https://www.python.org/downloads"
+    exit 1
+fi
+
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then
     echo "uv is not installed. Installing via brew..."

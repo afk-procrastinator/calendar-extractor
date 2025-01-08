@@ -1,6 +1,11 @@
 # Calendar Extractor
+---
 
-A script to extract calendar data from an Outlook for Mac archive and format it for use in an Excel Sheet. 
+![image]({https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue})
+![image]({https://img.shields.io/badge/Microsoft_Excel-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white})
+![image]({https://img.shields.io/badge/Microsoft_Outlook-0078D4?style=for-the-badge&logo=microsoft-outlook&logoColor=white})
+
+A script to extract calendar data from an Outlook for Mac archive and format it for use in an Excel Sheet. Participants will be attempted to be matched to contacts, also saved in an Excel Sheet. 
 
 ## Setup
 
@@ -13,7 +18,7 @@ A script to extract calendar data from an Outlook for Mac archive and format it 
 - `CONTACTS_FILE`: The name of the contacts file to use. This file should be in the `data` directory.
 - `SAVE_FILE`: The name of the file to save the calendar data to. This file will be saved/read from the `data` directory.
 
-3. Add a `Contacts.xlsx` file in the root directory with the following columns:
+3. Add a `Contacts.xlsx` (or otherwise specified in .env) file in the root directory with the following columns:
 
 - `Name`: The name of the contact
 - `Affiliation`: The affiliation of the contact
@@ -25,4 +30,4 @@ A script to extract calendar data from an Outlook for Mac archive and format it 
 
 5. Run the script by running `python CalendarExtract.py` in the terminal. 
 
-6. The script will create an `Calendar.xlsx` file in the root directory. 
+6. The script will create an `Calendar.xlsx` file in the data directory (name specifified in .env, or different location set in .env). 
