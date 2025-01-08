@@ -1,25 +1,62 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import zipfile
 import os
 import xml.etree.ElementTree as ET
 import pandas as pd
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Basic info
 your_email=os.getenv("YOUR_EMAIL")
 
-# Extracted from Outlook
+# Extracted from Outlook path
 base_directory = f"./data/Outlook for Mac Archive/Accounts/{your_email}"
 
-# Date range to extract
-start_date = datetime(2024, 1, 6)
-end_date = datetime(2024, 1, 13)
+# Extract .olm file if it exists
+olm_files = [f for f in os.listdir("data") if f.endswith(".olm")]
+print(f"Extracting .olm file... {olm_files}")
+if olm_files:
+    
+    olm_path = os.path.join("data", olm_files[0])
+    extract_path = os.path.join("data", "Outlook for Mac Archive")
+    
+    # Remove existing extracted folder if it exists
+    if os.path.exists(extract_path):
+        import shutil
+        shutil.rmtree(extract_path)
+        
+    # Extract the .olm file
+    with zipfile.ZipFile(olm_path, 'r') as zip_ref:
+        zip_ref.extractall("data/Outlook for Mac Archive")
+
+# Ask user for date start, set end range to one week later.
+start_date = input("Enter start date (YYYY-MM-DD): ")
+
+# Convert string to datetime before adding timedelta
+start_date = datetime.strptime(start_date, '%Y-%m-%d')  # Adjust format string to match your date format
+end_date = start_date + timedelta(days=7)
+
+print(f"Extracting calendar data from {start_date} to {end_date}...")
+
+# Format file paths for data directory if not specified. 
+contacts_file = os.getenv("CONTACTS_FILE")
+if "/" not in contacts_file:
+    contacts_file = f"./data/{contacts_file}"
+
+save_file = os.getenv("SAVE_FILE")
+if "/" not in save_file:
+    save_file = f"./data/{save_file}"
 
 # Read contacts file and create email mapping
-contacts_df = pd.read_excel('Contacts.xlsx', names=['Name', 'Affiliation', 'Type', 'Role', 'Email'])
+print(f"Reading contacts file... {contacts_file}")
+contacts_df = pd.read_excel(contacts_file, names=['Name', 'Affiliation', 'Type', 'Role', 'Email'])
 email_mapping = {
     row['Email'].lower(): f"{row['Name']}, {row['Role']}, {row['Affiliation']}"
     for _, row in contacts_df.iterrows()
@@ -36,7 +73,7 @@ def format_participants(participants_str):
     for participant in participants:
         participant_lower = participant.lower()
         # Skip CNAS email addresses
-        if participant_lower.endswith('@cnas.org'):
+        if participant_lower.endswith(os.getenv("EMAIL_DOMAIN").lower()):
             continue
         if participant_lower in email_mapping:
             formatted_participants.append(email_mapping[participant_lower])
@@ -45,7 +82,9 @@ def format_participants(participants_str):
     
     return ', '.join(formatted_participants) if formatted_participants else None
 
+# Extract appointments from the XML file
 def extract_appointments(file_path, member_name):
+    print(f"Extracting appointments from {file_path}...")
     tree = ET.parse(file_path)
     root = tree.getroot()
     
@@ -157,23 +196,17 @@ if not df.empty:
 else:
     df_final = df
 
-
-# Write to Excel
-output_filename = "Calendar.xlsx"
-
 # Write to Excel with the date as the sheet name
 sheet_name = f"raw_{end_date.strftime('%Y%m%d')}"
 
-if not os.path.exists(output_filename):
-    with pd.ExcelWriter(output_filename, engine='openpyxl') as writer:
+if not os.path.exists(save_file):
+    with pd.ExcelWriter(save_file, engine='openpyxl') as writer:
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
 else:
-    with pd.ExcelWriter(output_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+    with pd.ExcelWriter(save_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
 
-print(f"Data successfully written to sheet '{sheet_name}' in '{output_filename}'.")
-
-print(f"Data successfully written to the 'Raw' sheet in '{output_filename}'.")
+print(f"Data successfully written to sheet '{sheet_name}' in '{save_file}'.")
 
 
 

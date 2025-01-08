@@ -10,6 +10,8 @@ A script to extract calendar data from an Outlook for Mac archive and format it 
 
 - `YOUR_EMAIL`: Your email address
 - `IGNORE_PHRASES`: A comma-separated list of phrases to ignore in the calendar events
+- `CONTACTS_FILE`: The name of the contacts file to use. This file should be in the `data` directory.
+- `SAVE_FILE`: The name of the file to save the calendar data to. This file will be saved/read from the `data` directory.
 
 3. Add a `Contacts.xlsx` file in the root directory with the following columns:
 
