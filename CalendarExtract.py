@@ -36,11 +36,12 @@ if olm_files:
     with zipfile.ZipFile(olm_path, 'r') as zip_ref:
         zip_ref.extractall("data/Outlook for Mac Archive")
 
-# Ask user for date start, set end range to one week later.
+# Replace the input prompt with a hardcoded date
 start_date = input("Enter start date (YYYY-MM-DD): ")
+# start_date = "2025-01-01"
 
 # Convert string to datetime before adding timedelta
-start_date = datetime.strptime(start_date, '%Y-%m-%d')  # Adjust format string to match your date format
+start_date = datetime.strptime(start_date, '%Y-%m-%d')
 end_date = start_date + timedelta(days=7)
 
 print(f"Extracting calendar data from {start_date} to {end_date}...")
@@ -113,7 +114,7 @@ def extract_appointments(file_path, member_name):
             continue
         
         to_append = {
-            'Date': event_date.strftime('%Y-%m-%d'),
+            'Date': event_date.strftime('%m/%d/%y'),
             'Title': event_title,
             'Member': member_name if member_name != "Calendar" else your_email,
             'ModificationDate': datetime.strptime(mod_date.text, '%Y-%m-%dT%H:%M:%S'),
@@ -187,24 +188,40 @@ if not df.empty:
     df_combined['IsCanceled'] = df_combined['Title'].str.lower().str.startswith('canceled:')
     
     # For each base title, keep non-canceled version if it exists
-    df_final = df_combined.sort_values('ModificationDate').groupby('BaseTitle').apply(
+    df_final = df_combined.sort_values('ModificationDate').groupby('BaseTitle', group_keys=False).apply(
         lambda x: x[~x['IsCanceled']].iloc[-1] if len(x[~x['IsCanceled']]) > 0 else x.iloc[-1]
     ).reset_index(drop=True)
     
-    # Drop working columns
-    df_final = df_final.drop(['EventKey', 'BaseTitle', 'IsCanceled', 'ModificationDate'], axis=1)
+    # Reorder columns
+    columns = ['Date', 'Title', 'Member', 'Location', 'Participants', 'Topic', 'Details']
+    df_final = df_final[columns]
 else:
     df_final = df
 
 # Write to Excel with the date as the sheet name
 sheet_name = f"raw_{end_date.strftime('%Y%m%d')}"
 
+# Create Excel writer with standard date format
 if not os.path.exists(save_file):
     with pd.ExcelWriter(save_file, engine='openpyxl') as writer:
+        # Convert Date column to datetime before writing
+        df_final['Date'] = pd.to_datetime(df_final['Date'])
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+        # Apply Excel's built-in short date format
+        worksheet = writer.sheets[sheet_name]
+        for cell in worksheet['A']:
+            if cell.row > 1:  # Skip header row
+                cell.number_format = 'mm/dd/yy'
 else:
     with pd.ExcelWriter(save_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+        # Convert Date column to datetime before writing
+        df_final['Date'] = pd.to_datetime(df_final['Date'])
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
+        # Apply Excel's built-in short date format
+        worksheet = writer.sheets[sheet_name]
+        for cell in worksheet['A']:
+            if cell.row > 1:  # Skip header row
+                cell.number_format = 'mm/dd/yy'
 
 print(f"Data successfully written to sheet '{sheet_name}' in '{save_file}'.")
 
