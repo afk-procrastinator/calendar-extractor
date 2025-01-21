@@ -15,6 +15,7 @@ load_dotenv()
 
 # Basic info
 your_email=os.getenv("YOUR_EMAIL")
+ignore_accounts = os.getenv("IGNORE_ACCOUNTS").split(", ")
 
 # Extracted from Outlook path
 base_directory = f"./data/Outlook for Mac Archive/Accounts/{your_email}"
@@ -58,6 +59,10 @@ if "/" not in save_file:
 # Read contacts file and create email mapping
 print(f"Reading contacts file... {contacts_file}")
 contacts_df = pd.read_excel(contacts_file, names=['Name', 'Affiliation', 'Type', 'Role', 'Email'])
+
+# Get your name from .env file or use email username as fallback
+your_name = os.getenv("YOUR_NAME")
+
 email_mapping = {
     row['Email'].lower(): f"{row['Name']}, {row['Role']}, {row['Affiliation']}"
     for _, row in contacts_df.iterrows()
@@ -73,10 +78,13 @@ def format_participants(participants_str):
     
     for participant in participants:
         participant_lower = participant.lower()
-        # Skip CNAS email addresses
-        if participant_lower.endswith(os.getenv("EMAIL_DOMAIN").lower()):
+        # Replace your email with your name
+        if participant_lower == your_email.lower():
+            formatted_participants.append(your_name)
+        # Skip other custom email addresses
+        elif participant_lower.endswith(os.getenv("EMAIL_DOMAIN").lower()):
             continue
-        if participant_lower in email_mapping:
+        elif participant_lower in email_mapping:
             formatted_participants.append(email_mapping[participant_lower])
         else:
             formatted_participants.append(participant)
@@ -151,6 +159,10 @@ def extract_appointments(file_path, member_name):
 all_appointments = []
 
 for folder_name in os.listdir(base_directory):
+    # Skip folders in ignore_accounts
+    if folder_name in ignore_accounts:
+        continue
+        
     folder_path = os.path.join(base_directory, folder_name)
     if os.path.isdir(folder_path):
         xml_file_path = os.path.join(folder_path, 'Calendar.xml')
@@ -171,6 +183,9 @@ if not df.empty:
     # Create a simplified identifier for each unique event
     df['EventKey'] = df['EventDate'].dt.strftime('%Y-%m-%d %H:%M') + '_' + df['Title'].str.lower()
     
+    # Replace your email with your name in the Member column
+    df['Member'] = df['Member'].apply(lambda x: your_name if x == your_email else x)
+    
     # Combine members for the same event while keeping other details
     df_combined = df.groupby('EventKey').agg({
         'Date': 'first',
@@ -188,9 +203,12 @@ if not df.empty:
     df_combined['IsCanceled'] = df_combined['Title'].str.lower().str.startswith('canceled:')
     
     # For each base title, keep non-canceled version if it exists
-    df_final = df_combined.sort_values('ModificationDate').groupby('BaseTitle', group_keys=False).apply(
-        lambda x: x[~x['IsCanceled']].iloc[-1] if len(x[~x['IsCanceled']]) > 0 else x.iloc[-1]
-    ).reset_index(drop=True)
+    # Fixed deprecation warning by explicitly selecting columns after groupby
+    df_final = (df_combined.sort_values('ModificationDate')
+                .groupby('BaseTitle', group_keys=False)
+                [['Date', 'Title', 'Member', 'Location', 'Participants', 'Topic', 'Details', 'IsCanceled', 'ModificationDate']]
+                .apply(lambda x: x[~x['IsCanceled']].iloc[-1] if len(x[~x['IsCanceled']]) > 0 else x.iloc[-1])
+                .reset_index(drop=True))
     
     # Reorder columns
     columns = ['Date', 'Title', 'Member', 'Location', 'Participants', 'Topic', 'Details']
@@ -204,8 +222,8 @@ sheet_name = f"raw_{end_date.strftime('%Y%m%d')}"
 # Create Excel writer with standard date format
 if not os.path.exists(save_file):
     with pd.ExcelWriter(save_file, engine='openpyxl') as writer:
-        # Convert Date column to datetime before writing
-        df_final['Date'] = pd.to_datetime(df_final['Date'])
+        # Convert Date column to datetime with explicit format
+        df_final['Date'] = pd.to_datetime(df_final['Date'], format='%m/%d/%y')
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
         # Apply Excel's built-in short date format
         worksheet = writer.sheets[sheet_name]
@@ -214,8 +232,8 @@ if not os.path.exists(save_file):
                 cell.number_format = 'mm/dd/yy'
 else:
     with pd.ExcelWriter(save_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-        # Convert Date column to datetime before writing
-        df_final['Date'] = pd.to_datetime(df_final['Date'])
+        # Convert Date column to datetime with explicit format
+        df_final['Date'] = pd.to_datetime(df_final['Date'], format='%m/%d/%y')
         df_final.to_excel(writer, sheet_name=sheet_name, index=False)
         # Apply Excel's built-in short date format
         worksheet = writer.sheets[sheet_name]
