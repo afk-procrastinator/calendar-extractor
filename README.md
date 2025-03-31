@@ -30,6 +30,6 @@ A script to extract calendar data from an Outlook for Mac archive and format it 
 
 4. Extract the calendar data from Outlook for Mac and save it in the `data/Outlook for Mac Archive` directory. It will be exported as an .olm file, extract it like a normal .zip file. 
 
-5. Run the script by running `python CalendarExtract.py` in the terminal. 
+5. Run the script by running `python CalendarExtract.py` in the terminal, or `uv run CalendarExtract.py` if using uv. 
 
 6. The script will create an `Calendar.xlsx` file in the data directory (name specifified in .env, or different location set in .env). 

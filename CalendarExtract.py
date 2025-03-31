@@ -43,7 +43,7 @@ start_date = input("Enter start date (YYYY-MM-DD): ")
 
 # Convert string to datetime before adding timedelta
 start_date = datetime.strptime(start_date, '%Y-%m-%d')
-end_date = start_date + timedelta(days=7)
+end_date = start_date + timedelta(days=6)
 
 print(f"Extracting calendar data from {start_date} to {end_date}...")
 
