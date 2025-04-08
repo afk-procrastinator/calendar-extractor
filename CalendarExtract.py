@@ -9,6 +9,10 @@ from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from colorama import init, Fore, Back, Style
+
+# Initialize colorama
+init(autoreset=True)
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +26,7 @@ base_directory = f"./data/Outlook for Mac Archive/Accounts/{your_email}"
 
 # Extract .olm file if it exists
 olm_files = [f for f in os.listdir("data") if f.endswith(".olm")]
-print(f"Extracting .olm file... {olm_files}")
+print(f"{Fore.CYAN}Extracting .olm file...{Style.RESET_ALL} {Fore.YELLOW}{olm_files}{Style.RESET_ALL}")
 if olm_files:
     
     olm_path = os.path.join("data", olm_files[0])
@@ -38,14 +42,15 @@ if olm_files:
         zip_ref.extractall("data/Outlook for Mac Archive")
 
 # Replace the input prompt with a hardcoded date
-start_date = input("Enter start date (YYYY-MM-DD): ")
+start_date = input(f"{Fore.GREEN}Enter start date (YYYY-MM-DD): {Style.RESET_ALL}")
 # start_date = "2025-01-01"
 
 # Convert string to datetime before adding timedelta
 start_date = datetime.strptime(start_date, '%Y-%m-%d')
 end_date = start_date + timedelta(days=6)
 
-print(f"Extracting calendar data from {start_date} to {end_date}...")
+# Pretty print start date for context
+print(f"{Fore.CYAN}Extracting calendar data from {Fore.YELLOW}{start_date.strftime('%B %d')}{Fore.CYAN} to {Fore.YELLOW}{end_date.strftime('%B %d')}{Fore.CYAN}...{Style.RESET_ALL}")
 
 # Format file paths for data directory if not specified. 
 contacts_file = os.getenv("CONTACTS_FILE")
@@ -57,7 +62,7 @@ if "/" not in save_file:
     save_file = f"./data/{save_file}"
 
 # Read contacts file and create email mapping
-print(f"Reading contacts file... {contacts_file}")
+print(f"{Fore.CYAN}Reading contacts file...{Style.RESET_ALL} {Fore.YELLOW}{contacts_file}{Style.RESET_ALL}")
 contacts_df = pd.read_excel(contacts_file, names=['Name', 'Affiliation', 'Type', 'Role', 'Email'])
 
 # Get your name from .env file or use email username as fallback
@@ -93,7 +98,7 @@ def format_participants(participants_str):
 
 # Extract appointments from the XML file
 def extract_appointments(file_path, member_name):
-    print(f"Extracting appointments from {file_path}...")
+    print(f"{Fore.CYAN}Extracting appointments for {Fore.YELLOW}{member_name}{Fore.CYAN}...{Style.RESET_ALL}")
     tree = ET.parse(file_path)
     root = tree.getroot()
     
@@ -147,6 +152,9 @@ def extract_appointments(file_path, member_name):
         details = appointment.find('OPFCalendarEventCopyDescription')
         if details is not None:
             soup = BeautifulSoup(details.text, 'html.parser')
+            # Remove all <br> tags
+            for br in soup.find_all('br'):
+                br.decompose()
             to_append['Details'] = soup.get_text()
         else:
             to_append['Details'] = None
@@ -241,7 +249,7 @@ else:
             if cell.row > 1:  # Skip header row
                 cell.number_format = 'mm/dd/yy'
 
-print(f"Data successfully written to sheet '{sheet_name}' in '{save_file}'.")
+print(f"{Fore.GREEN}Data successfully written to sheet '{Fore.YELLOW}{sheet_name}{Fore.GREEN}' in '{Fore.YELLOW}{save_file}{Fore.GREEN}'.{Style.RESET_ALL}")
 
 
 
