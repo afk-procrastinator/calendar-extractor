@@ -9,5 +9,6 @@ dependencies = [
     "pandas",
     "openpyxl",
     "bs4",
-    "python-dateutil"
+    "python-dateutil",
+    "colorama>=0.4.6",
 ]

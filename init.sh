@@ -4,7 +4,7 @@
 set -e
 
 # Check if python is installed
-if ! command -v python &> /dev/null; then
+if ! command -v python3 &> /dev/null; then
     echo "python is not installed. Please install it first using the instructions at https://www.python.org/downloads"
     exit 1
 fi
@@ -13,10 +13,17 @@ fi
 if ! command -v uv &> /dev/null; then
     echo "uv is not installed. Installing via brew..."
     if ! command -v brew &> /dev/null; then
-        echo "brew is not installed. Please install it first using the instructions at https://brew.sh"
+        echo "brew is not installed. Running install script..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         exit 1
     fi
     brew install uv
+fi
+
+# Delete existing virtual environment
+if [ -d ".venv" ]; then
+    echo "Deleting existing virtual environment..."
+    rm -rf .venv
 fi
 
 # Create virtual environment if it doesn't exist
